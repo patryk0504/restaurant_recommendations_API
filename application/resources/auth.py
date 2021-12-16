@@ -44,9 +44,9 @@ class Register(Resource):
         username = data.get("username")
         password = data.get('password')
         if not username:
-            return {'username': 'This field is required.'}, 400
+            return {'status': 'fail', 'message': 'Username field is required.'}, 400
         if not password:
-            return {'password': 'This field is required.'}, 400
+            return {'status': 'fail', 'message': 'Password field is required.'}, 400
 
         def get_user_by_username(tx, username):
             return tx.run(
@@ -58,10 +58,9 @@ class Register(Resource):
         db = get_db()
         result = db.read_transaction(get_user_by_username, username)
         if result and result.get('user'):
-            return {'username': 'username already in use'}, 400
+            return {'status': 'fail', 'message': 'Username already in use'}, 400
 
         def create_user(tx, username, password):
-            # CREATE (user:User {id: $id, username: $username, password: $password, api_key: $api_key}) RETURN user
             return tx.run(
                 '''
                 CREATE (user:User {id: $id, username: $username, password: $password}) RETURN user
@@ -71,13 +70,14 @@ class Register(Resource):
                     'id': str(uuid.uuid4()),
                     'username': username,
                     'password': hash_password(password),
-                    # 'api_key': binascii.hexlify(os.urandom(20)).decode()
                 }
             ).single()
 
         results = db.write_transaction(create_user, username, password)
         user = results['user']
-        return serialize_user(user), 201
+        result = serialize_user(user)
+        result['message'] = 'Successfully registered'
+        return result, 201
 
 
 class Login(Resource):
@@ -99,12 +99,16 @@ class Login(Resource):
 
         db = get_db()
         result = db.read_transaction(get_user_by_username, username)
+        if result is None:
+            return {
+                       'status': 'fail',
+                       'message': 'Username does not exist'}, 400
         try:
             user = result['user']
         except KeyError:
             return {
                        'status': 'fail',
-                       'message': 'username does not exist'}, 400
+                       'message': 'Username does not exist'}, 400
 
         if check_password(user['password'], password):
             expires = datetime.timedelta(minutes=20)

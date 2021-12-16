@@ -81,7 +81,6 @@ class RestaurantList(Resource):
     @jwt_required()
     def get(self):
         def get_restaurant(q):
-            # return list(q.run('MATCH (r:Restaurant) set r.id = id(r) return r'))
             return list(q.run(
                 '''
                 MATCH (l:Location)<-[:LOCATED_IN]-(n:Restaurant)-[:SERVES]->(c:Cuisine) 
