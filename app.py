@@ -2,7 +2,6 @@ from flask import Flask, g
 from flask_cors import CORS
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
-from flask_json import FlaskJSON
 from dotenv import load_dotenv, find_dotenv
 from application.env import env
 
@@ -12,7 +11,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = env('SECRET_KEY')
 # CORS(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
-FlaskJSON(app)
 api = Api(app)
 jwt = JWTManager(app)
 import application.resources.routes as routes
@@ -28,4 +26,3 @@ def close_db(error):
 
 if __name__ == '__main__':
     app.run()
-    # app.run(host='0.0.0.0', port=5555)
